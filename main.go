@@ -76,10 +76,14 @@ func extractRepo(f types.Finding) string {
 }
 
 type summary struct {
-	Critical int
-	High     int
-	Medium   int
-	Low      int
+	critical int
+	high     int
+	medium   int
+	low      int
+}
+
+func (s summary) total() int {
+	return s.critical + s.high + s.medium + s.low
 }
 
 func main() {
@@ -116,6 +120,7 @@ func main() {
 
 	// Summary Table
 	summaryTable := make(map[string]summary)
+	var totals summary
 	for _, f := range findings {
 		name := extractRepo(f)
 		if name == "" {
@@ -124,13 +129,17 @@ func main() {
 		s := summaryTable[name]
 		switch f.Severity {
 		case types.SeverityCritical:
-			s.Critical += 1
+			s.critical += 1
+			totals.critical += 1
 		case types.SeverityHigh:
-			s.High += 1
+			s.high += 1
+			totals.high += 1
 		case types.SeverityMedium:
-			s.Medium += 1
+			s.medium += 1
+			totals.medium += 1
 		case types.SeverityLow:
-			s.Low += 1
+			s.low += 1
+			totals.low += 1
 		}
 		summaryTable[name] = s
 	}
@@ -148,8 +157,9 @@ func main() {
 	table.Header([]string{"Repository", "Tag", "Critical", "High", "Medium", "Low", "Total"})
 	for _, n := range repoNames {
 		s := summaryTable[n]
-		table.Append([]any{n, *tag, s.Critical, s.High, s.Medium, s.Low, s.Critical + s.High + s.Medium + s.Low})
+		table.Append([]any{n, *tag, s.critical, s.high, s.medium, s.low, s.total()})
 	}
+	table.Footer("Total", "", totals.critical, totals.high, totals.medium, totals.low, totals.total())
 
 	table.Render()
 }

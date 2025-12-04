@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -26,7 +27,11 @@ func checkCallerIdentity(ctx context.Context, config aws.Config) error {
 	return nil
 }
 
-func fetchFindings(ctx context.Context, config aws.Config, tag *string) ([]types.Finding, error) {
+func stringPtr(s string) *string {
+	return &s
+}
+
+func fetchFindings(ctx context.Context, config aws.Config, tag *string, ignore *string) ([]types.Finding, error) {
 	filerCriteria :=
 		&types.FilterCriteria{
 			EcrImageTags: []types.StringFilter{{
@@ -34,6 +39,17 @@ func fetchFindings(ctx context.Context, config aws.Config, tag *string) ([]types
 				Value:      tag,
 			}},
 		}
+	if ignore != nil && *ignore != "" {
+		ignoredRepos := strings.SplitSeq(*ignore, ",")
+		for r := range ignoredRepos {
+			filerCriteria.EcrImageRepositoryName = append(filerCriteria.EcrImageRepositoryName,
+				types.StringFilter{
+					Comparison: types.StringComparisonNotEquals,
+					Value:      stringPtr(r),
+				},
+			)
+		}
+	}
 	client := inspector2.NewFromConfig(config)
 	fmt.Println("Getting findings ...")
 	listResult, err := client.ListFindings(ctx, &inspector2.ListFindingsInput{
@@ -92,6 +108,7 @@ func main() {
 	// Program flags
 	profile := flag.String("p", "", "Name of AWS profile")
 	tag := flag.String("t", "", "Image tag used for filtering")
+	ignore := flag.String("i", "", "Repositories to ignore")
 	flag.Parse()
 
 	if *profile == "" {
@@ -113,7 +130,7 @@ func main() {
 	}
 
 	// Fetch findings
-	findings, err := fetchFindings(ctx, config, tag)
+	findings, err := fetchFindings(ctx, config, tag, ignore)
 	if err != nil {
 		log.Fatal(err)
 	}

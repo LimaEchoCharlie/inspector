@@ -8,6 +8,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -15,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/inspector2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 func checkCallerIdentity(ctx context.Context, config aws.Config) error {
@@ -177,6 +179,7 @@ func main() {
 		table.Append([]any{n, *tag, s.critical, s.high, s.medium, s.low, s.total()})
 	}
 	table.Footer("Total", "", totals.critical, totals.high, totals.medium, totals.low, totals.total())
+	table.Caption(tw.Caption{Text: fmt.Sprintf("Fetched %v", time.Now().Format(time.DateOnly)), Align: "right"})
 
 	table.Render()
 }

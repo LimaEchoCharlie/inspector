@@ -6,4 +6,5 @@
 - [] Make tag optional; get the most recent tag
 - [] Compare results to external csv
 - [] Consistent logging/debug
-- [] Add fetch date
+- [x] Add fetch date
+- [] Export summary table to image
